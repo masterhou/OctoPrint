@@ -342,6 +342,8 @@ class CommandTrigger(GenericEventListener):
 			"__filename": "NO FILE",
 			"__progress": "0",
 			"__data": str(payload),
+            "__name": settings().get(["appearance", "name"]),
+            "__port": settings().getInt(["server", "port"]),
 			"__now": datetime.datetime.now().isoformat()
 		}
 

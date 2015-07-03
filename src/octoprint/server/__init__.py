@@ -311,6 +311,9 @@ class Server():
 			self._host = s.get(["server", "host"])
 		if self._port is None:
 			self._port = s.getInt(["server", "port"])
+        
+        # hyt
+		s.setInt(["server", "port"], self._port)
 
 		app.debug = self._debug
 
