@@ -10,6 +10,7 @@ import logging
 import subprocess
 import Queue
 import threading
+import sys, socket
 import collections
 
 from octoprint.settings import settings
@@ -93,6 +94,12 @@ def eventManager():
 	if _instance is None:
 		_instance = EventManager()
 	return _instance
+
+def get_mac_address():
+	import uuid
+	node = uuid.getnode()
+	mac = uuid.UUID(int = node).hex[-12:]
+	return mac
 
 
 class EventManager(object):
@@ -336,14 +343,16 @@ class CommandTrigger(GenericEventListener):
 
 		Additionally, the keys of the event's payload can also be used as placeholder.
 		"""
-
+		__host = socket.gethostname()
 		params = {
 			"__currentZ": "-1",
 			"__filename": "NO FILE",
 			"__progress": "0",
 			"__data": str(payload),
-            "__name": settings().get(["appearance", "name"]),
-            "__port": settings().getInt(["server", "port"]),
+			"__name": settings().get(["appearance", "name"]),
+			"__port": settings().getInt(["server", "port"]),
+			"__host": __host,
+            "__mac": get_mac_address(),
 			"__now": datetime.datetime.now().isoformat()
 		}
 
