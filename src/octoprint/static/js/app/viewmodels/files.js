@@ -47,8 +47,8 @@ $(function() {
                 },
                 "size": function(a, b) {
                     // sorts descending
-                    if (b["bytes"] === undefined || a["bytes"] > b["bytes"]) return -1;
-                    if (a["bytes"] < b["bytes"]) return 1;
+                    if (b["size"] === undefined || a["size"] > b["size"]) return -1;
+                    if (a["size"] < b["size"]) return 1;
                     return 0;
                 }
             },
@@ -309,18 +309,17 @@ $(function() {
         };
 
         self.performSearch = function(e) {
-            if (e !== undefined) {
-                e.preventDefault();
-            }
-
             var query = self.searchQuery();
             if (query !== undefined && query.trim() != "") {
+                query = query.toLocaleLowerCase();
                 self.listHelper.changeSearchFunction(function(entry) {
                     return entry && entry["name"].toLocaleLowerCase().indexOf(query) > -1;
                 });
             } else {
                 self.listHelper.resetSearch();
             }
+
+            return false;
         };
 
         self.onDataUpdaterReconnect = function() {

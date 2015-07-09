@@ -14,6 +14,7 @@ from flask.ext.babel import Babel, gettext, ngettext
 from flask.ext.assets import Environment, Bundle
 from babel import Locale
 from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 from collections import defaultdict
 
 import os
@@ -402,7 +403,12 @@ class Server():
 				printer.connect(port=port, baudrate=baudrate, profile=printer_profile["id"] if "id" in printer_profile else "_default")
 
 		# start up watchdogs
-		observer = Observer()
+		if s.getBoolean(["feature", "pollWatched"]):
+			# use less performant polling observer if explicitely configured
+			observer = PollingObserver()
+		else:
+			# use os default
+			observer = Observer()
 		observer.schedule(util.watchdog.GcodeWatchdogHandler(fileManager, printer), s.getBaseFolder("watched"))
 		observer.start()
 
@@ -541,6 +547,9 @@ class Server():
 				},
 				"tornado.general": {
 					"level": "INFO"
+				},
+				"octoprint.server.util.flask": {
+					"level": "WARN"
 				}
 			},
 			"root": {
@@ -709,6 +718,7 @@ class Server():
 		global pluginManager
 
 		util.flask.fix_webassets_cache()
+		util.flask.fix_webassets_filtertool()
 
 		base_folder = settings().getBaseFolder("generated")
 
@@ -842,9 +852,9 @@ class Server():
 			js_app_bundle = Bundle(*js_app, output="webassets/packed_app.js", filters="js_delimiter_bundler")
 
 		css_libs_bundle = Bundle(*css_libs, output="webassets/packed_libs.css")
-		css_app_bundle = Bundle(*css_app, output="webassets/packed_app.css")
+		css_app_bundle = Bundle(*css_app, output="webassets/packed_app.css", filters="cssrewrite")
 
-		all_less_bundle = Bundle(*less_app, output="webassets/packed_app.less", filters="less_importrewrite")
+		all_less_bundle = Bundle(*less_app, output="webassets/packed_app.less", filters="cssrewrite, less_importrewrite")
 
 		assets.register("js_libs", js_libs_bundle)
 		assets.register("js_app", js_app_bundle)
