@@ -21,7 +21,9 @@ import logging
 _logger = logging.getLogger(__name__)
 
 @app.route("/")
-@util.flask.cached(refreshif=lambda: util.flask.cache_check_headers() or "_refresh" in request.values, key=lambda: "view/%s/%s" % (request.path, g.locale))
+@util.flask.cached(refreshif=lambda: util.flask.cache_check_headers() or "_refresh" in request.values,
+                   key=lambda: "view/%s/%s" % (request.path, g.locale),
+                   unless_response=util.flask.cache_check_response_headers)
 def index():
 
 	#~~ a bunch of settings
@@ -170,16 +172,20 @@ def index():
 		name = implementation._identifier
 		plugin_names.add(name)
 
-		vars = implementation.get_template_vars()
+		try:
+			vars = implementation.get_template_vars()
+			configs = implementation.get_template_configs()
+		except:
+			_logger.exception("Error while retrieving template data for plugin {}, ignoring it".format(name))
+			continue
+
 		if not isinstance(vars, dict):
 			vars = dict()
+		if not isinstance(configs, (list, tuple)):
+			configs = []
 
 		for var_name, var_value in vars.items():
 			plugin_vars["plugin_" + name + "_" + var_name] = var_value
-
-		configs = implementation.get_template_configs()
-		if not isinstance(configs, (list, tuple)):
-			configs = []
 
 		includes = _process_template_configs(name, implementation, configs, template_rules)
 
@@ -240,12 +246,13 @@ def index():
 
 	#~~ prepare full set of template vars for rendering
 
+	first_run = settings().getBoolean(["server", "firstRun"]) and (userManager is None or not userManager.hasBeenCustomized())
 	render_kwargs = dict(
 		webcamStream=settings().get(["webcam", "stream"]),
 		enableTemperatureGraph=settings().get(["feature", "temperatureGraph"]),
 		enableAccessControl=userManager is not None,
 		enableSdSupport=settings().get(["feature", "sdSupport"]),
-		firstRun=settings().getBoolean(["server", "firstRun"]) and (userManager is None or not userManager.hasBeenCustomized()),
+		firstRun=first_run,
 		debug=debug,
 		version=VERSION,
 		display_version=DISPLAY_VERSION,
@@ -260,10 +267,20 @@ def index():
 
 	#~~ render!
 
-	return render_template(
+	import datetime
+
+	response = make_response(render_template(
 		"index.jinja2",
 		**render_kwargs
-	)
+	))
+	response.headers["Last-Modified"] = datetime.datetime.now()
+
+	if first_run:
+		response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
+		response.headers["Pragma"] = "no-cache"
+		response.headers["Expires"] = "-1"
+
+	return response
 
 
 def _process_template_configs(name, implementation, configs, rules):
