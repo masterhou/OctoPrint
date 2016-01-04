@@ -1689,7 +1689,7 @@ class MachineCom(object):
 						command_allowing_checksum = gcode is not None or self._sendChecksumWithUnknownCommands
 						checksum_enabled = self._alwaysSendChecksum or (self.isPrinting() and not self._neverSendChecksum)
 
-						command_to_send = command.encode("ascii", errors="replace")
+						command_to_send = command.encode("utf8", errors="replace")
 						if command_requiring_checksum or (command_allowing_checksum and checksum_enabled):
 							self._doIncrementAndSendWithChecksum(command_to_send)
 						else:
