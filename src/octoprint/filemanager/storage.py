@@ -213,11 +213,11 @@ class StorageInterface(object):
 		  * ``model``: adds a link to a model from which the file was created/sliced, expected additional data is the ``name``
 		    and optionally the ``hash`` of the file to link to. If the link can be resolved against another file on the
 		    current ``path``, not only will it be added to the links of ``name`` but a reverse link of type ``machinecode``
-		    refering to ``name`` and its hash will also be added to the linked ``model`` file
+		    referring to ``name`` and its hash will also be added to the linked ``model`` file
 		  * ``machinecode``: adds a link to a file containing machine code created from the current file (model), expected
 		    additional data is the ``name`` and optionally the ``hash`` of the file to link to. If the link can be resolved
 		    against another file on the current ``path``, not only will it be added to the links of ``name`` but a reverse
-		    link of type ``model`` refering to ``name`` and its hash will also be added to the linked ``model`` file.
+		    link of type ``model`` referring to ``name`` and its hash will also be added to the linked ``model`` file.
 		  * ``web``: adds a location on the web associated with this file (e.g. a website where to download a model),
 		    expected additional data is a ``href`` attribute holding the website's URL and optionally a ``retrieved``
 		    attribute describing when the content was retrieved
@@ -387,6 +387,10 @@ class LocalFileStorage(StorageInterface):
 		self._metadata_locks = dict()
 
 		self._metadata_cache = pylru.lrucache(10)
+
+		from slugify import Slugify
+		self._slugify = Slugify()
+		self._slugify.safe_chars = "-_.() "
 
 		self._old_metadata = None
 		self._initialize_metadata()
@@ -743,9 +747,9 @@ class LocalFileStorage(StorageInterface):
 
 	def sanitize_name(self, name):
 		"""
-		Raises a :class:`ValueError` for a ``name`` containing ``/`` or ``\``. Otherwise strips any characters from the
-		given ``name`` that are not any of the ASCII characters, digits, ``-``, ``_``, ``.``, ``(``, ``)`` or space and
-		replaces and spaces with ``_``.
+		Raises a :class:`ValueError` for a ``name`` containing ``/`` or ``\``. Otherwise
+		slugifies the given ``name`` by converting it to ASCII, leaving ``-``, ``_``, ``.``,
+		``(``, and ``)`` as is.
 		"""
 		if name is None:
 			return None
@@ -753,11 +757,7 @@ class LocalFileStorage(StorageInterface):
 		if "/" in name or "\\" in name:
 			raise ValueError("name must not contain / or \\")
 
-		import string
-		valid_chars = "-_.() {ascii}{digits}".format(ascii=string.ascii_letters, digits=string.digits)
-		sanitized_name = ''.join(c for c in name if c in valid_chars)
-		sanitized_name = sanitized_name.replace(" ", "_")
-		return sanitized_name
+		return self._slugify(name).replace(" ", "_")
 
 	def sanitize_path(self, path):
 		"""

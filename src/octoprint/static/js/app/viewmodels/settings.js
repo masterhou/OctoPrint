@@ -10,6 +10,9 @@ $(function() {
 
         self.receiving = ko.observable(false);
         self.sending = ko.observable(false);
+        self.exchanging = ko.pureComputed(function() {
+            return self.receiving() || self.sending();
+        });
         self.outstanding = [];
 
         self.settingsDialog = undefined;
@@ -19,11 +22,11 @@ $(function() {
         self.translationUploadButton = $("#settings_appearance_managelanguagesdialog_upload_start");
 
         self.translationUploadFilename = ko.observable();
-        self.invalidTranslationArchive = ko.computed(function() {
+        self.invalidTranslationArchive = ko.pureComputed(function() {
             var name = self.translationUploadFilename();
             return name !== undefined && !(_.endsWith(name.toLocaleLowerCase(), ".zip") || _.endsWith(name.toLocaleLowerCase(), ".tar.gz") || _.endsWith(name.toLocaleLowerCase(), ".tgz") || _.endsWith(name.toLocaleLowerCase(), ".tar"));
         });
-        self.enableTranslationUpload = ko.computed(function() {
+        self.enableTranslationUpload = ko.pureComputed(function() {
             var name = self.translationUploadFilename();
             return name !== undefined && name.trim() != "" && !self.invalidTranslationArchive();
         });
@@ -140,6 +143,9 @@ $(function() {
         self.serial_longRunningCommands = ko.observable(undefined);
         self.serial_checksumRequiringCommands = ko.observable(undefined);
         self.serial_helloCommand = ko.observable(undefined);
+        self.serial_ignoreErrorsFromFirmware = ko.observable(undefined);
+        self.serial_disconnectOnErrors = ko.observable(undefined);
+        self.serial_triggerOkForM29 = ko.observable(undefined);
 
         self.folder_uploads = ko.observable(undefined);
         self.folder_timelapse = ko.observable(undefined);
@@ -363,9 +369,20 @@ $(function() {
                 self.requestData(undefined, true);
                 return false;
             });
+
+            // reset scroll position on tab change
+            $('ul.nav-list a[data-toggle="tab"]', self.settingsDialog).on("show", function() {
+                self._resetScrollPosition();
+            });
         };
 
-        self.show = function() {
+        self.show = function(tab) {
+            // select first or specified tab
+            self.selectTab(tab);
+
+            // reset scroll position
+            self._resetScrollPosition();
+
             // show settings, ensure centered position
             self.settingsDialog.modal({
                 minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
@@ -507,7 +524,7 @@ $(function() {
             return item.display + ((item.english != undefined) ? ' (' + item.english + ')' : '');
         };
 
-        self.languagePacksAvailable = ko.computed(function() {
+        self.languagePacksAvailable = ko.pureComputed(function() {
             return self.translations.allSize() > 0;
         });
 
@@ -760,6 +777,21 @@ $(function() {
             } else {
                 // dialog is not open, just fetch new data
                 self.requestData();
+            }
+        };
+
+        self._resetScrollPosition = function() {
+            $('.scrollable', self.settingsDialog).scrollTop(0);
+        };
+
+        self.selectTab = function(tab) {
+            if (tab != undefined) {
+                if (!_.startsWith(tab, "#")) {
+                    tab = "#" + tab;
+                }
+                $('ul.nav-list a[href="' + tab + '"]', self.settingsDialog).tab("show");
+            } else {
+                $('ul.nav-list a:first', self.settingsDialog).tab("show");
             }
         };
     }

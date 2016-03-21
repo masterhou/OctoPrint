@@ -2,8 +2,8 @@ $(function() {
     function LoginStateViewModel() {
         var self = this;
 
-        self.loginUser = ko.observable();
-        self.loginPass = ko.observable();
+        self.loginUser = ko.observable("");
+        self.loginPass = ko.observable("");
         self.loginRemember = ko.observable(false);
 
         self.loggedIn = ko.observable(false);
@@ -19,7 +19,7 @@ $(function() {
         self.elementPasswordInput = undefined;
         self.elementLoginButton = undefined;
 
-        self.userMenuText = ko.computed(function() {
+        self.userMenuText = ko.pureComputed(function() {
             if (self.loggedIn()) {
                 return self.username();
             } else {
@@ -68,14 +68,14 @@ $(function() {
             var password = p || self.loginPass();
             var remember = (r != undefined ? r : self.loginRemember());
 
-            self.loginUser("");
-            self.loginPass("");
-            self.loginRemember(false);
-
             return OctoPrint.browser.login(username, password, remember)
                 .done(function(response) {
                     new PNotify({title: gettext("Login successful"), text: _.sprintf(gettext('You are now logged in as "%(username)s"'), {username: response.name}), type: "success"});
                     self.fromResponse(response);
+
+                    self.loginUser("");
+                    self.loginPass("");
+                    self.loginRemember(false);
                 })
                 .fail(function() {
                     new PNotify({title: gettext("Login failed"), text: gettext("User unknown or wrong password"), type: "error"});

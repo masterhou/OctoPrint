@@ -2,10 +2,10 @@
     <input type="text" class="input-block search-query" data-bind="value: searchQuery, valueUpdate: 'input'" placeholder="{{ _('Search...') }}">
 </form>
 <div class="gcode_files">
-    <div class="entry" data-bind="visible: currentPath() != '', click: function() { $root.navigateUp(); }" style="display: none"><i class="icon-arrow-left"></i> {{  _('Back') }}</div>
+    <div class="entry back" data-bind="visible: currentPath() != '', click: function() { $root.navigateUp(); }" style="display: none"><i class="icon-arrow-left"></i> {{  _('Back') }}</div>
 
     <!-- ko slimScrolledForeach: filesAndFolders -->
-    <div class="entry" data-bind="attr: { id: $root.getEntryId($data) }, template: { name: $root.templateFor($data), data: $data }"></div>
+    <div class="entry" data-bind="attr: { id: $root.getEntryId($data) }, template: { name: $root.templateFor($data), data: $data }, css: $data.type"></div>
     <!-- /ko -->
 
     <script type="text/html" id="files_template_machinecode">
@@ -54,18 +54,18 @@
             <span class="btn btn-primary fileinput-button span6" data-bind="css: {disabled: !$root.loginState.isUser()}" style="margin-bottom: 10px">
                                 <i class="icon-upload-alt icon-white"></i>
                                 <span>{{ _('Upload') }}</span>
-                                <input id="gcode_upload" type="file" name="file" class="fileinput-button" data-bind="enable: loginState.isUser()">
+                                <input id="gcode_upload" accept="{{ ",".join(supportedExtensions) }}" type="file" name="file" class="fileinput-button" data-bind="enable: loginState.isUser()">
                             </span>
             <span class="btn btn-primary fileinput-button span6" data-bind="css: {disabled: !$root.loginState.isUser() || !$root.isSdReady()}" style="margin-bottom: 10px">
                                 <i class="icon-upload-alt icon-white"></i>
                                 <span>{{ _('Upload to SD') }}</span>
-                                <input id="gcode_upload_sd" type="file" name="file" class="fileinput-button" data-bind="enable: loginState.isUser() && isSdReady()">
+                                <input id="gcode_upload_sd" accept="{{ ",".join(supportedExtensions) }}" type="file" name="file" class="fileinput-button" data-bind="enable: loginState.isUser() && isSdReady()">
                             </span>
         {% else %}
             <span class="btn btn-primary fileinput-button span12" data-bind="css: {disabled: !$root.loginState.isUser()}" style="margin-bottom: 10px">
                                 <i class="icon-upload-alt icon-white"></i>
                                 <span>{{ _('Upload') }}</span>
-                                <input id="gcode_upload" type="file" name="file" class="fileinput-button" data-bind="enable: loginState.isUser()">
+                                <input id="gcode_upload" accept="{{ ",".join(supportedExtensions) }}" type="file" name="file" class="fileinput-button" data-bind="enable: loginState.isUser()">
                             </span>
         {% endif %}
     </div>

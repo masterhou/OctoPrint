@@ -290,7 +290,7 @@ class Server():
 		self._setup_assets()
 
 		# configure timelapse
-		octoprint.timelapse.configureTimelapse()
+		octoprint.timelapse.configure_timelapse()
 
 		# setup command triggers
 		events.CommandTrigger(printer)
@@ -366,7 +366,8 @@ class Server():
 
 		server_routes = self._router.urls + [
 			# various downloads
-			(r"/downloads/timelapse/([^/]*\.mpg)", util.tornado.LargeResponseHandler, joined_dict(dict(path=self._settings.getBaseFolder("timelapse")),
+			# .mpg and .mp4 timelapses:
+			(r"/downloads/timelapse/([^/]*\.mp[g4])", util.tornado.LargeResponseHandler, joined_dict(dict(path=self._settings.getBaseFolder("timelapse")),
 			                                                                                      download_handler_kwargs,
 			                                                                                      no_hidden_files_validator)),
 			(r"/downloads/files/local/(.*)", util.tornado.LargeResponseHandler, joined_dict(dict(path=self._settings.getBaseFolder("uploads")),
@@ -651,7 +652,7 @@ class Server():
 		if octoprint.util.is_running_from_source():
 			root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
 			allowed = ["AUTHORS.md", "CHANGELOG.md", "THIRDPARTYLICENSES.md"]
-			files = {name: os.path.join(root, name) for name in allowed}
+			files = {"_data/" + name: os.path.join(root, name) for name in allowed}
 			loaders.append(octoprint.util.jinja.SelectedFilesLoader(files))
 
 		jinja_loader = jinja2.ChoiceLoader(loaders)
@@ -880,7 +881,7 @@ class Server():
 			"js/lib/modernizr.custom.js",
 			"js/lib/lodash.min.js",
 			"js/lib/sprintf.min.js",
-			"js/lib/knockout.js",
+			"js/lib/knockout-3.4.0.js",
 			"js/lib/knockout.mapping-latest.js",
 			"js/lib/babel.js",
 			"js/lib/avltree.js",
@@ -943,12 +944,7 @@ class Server():
 			"css/pnotify.min.css"
 		]
 		css_app = list(dynamic_assets["css"])
-		if len(css_app) == 0:
-			css_app = ["empty"]
-
 		less_app = list(dynamic_assets["less"])
-		if len(less_app) == 0:
-			less_app = ["empty"]
 
 		from webassets.filter import register_filter, Filter
 		from webassets.filter.cssrewrite.base import PatternRewriter
@@ -988,9 +984,16 @@ class Server():
 			js_app_bundle = Bundle(*js_app, output="webassets/packed_app.js", filters="js_delimiter_bundler")
 
 		css_libs_bundle = Bundle(*css_libs, output="webassets/packed_libs.css")
-		css_app_bundle = Bundle(*css_app, output="webassets/packed_app.css", filters="cssrewrite")
 
-		all_less_bundle = Bundle(*less_app, output="webassets/packed_app.less", filters="cssrewrite, less_importrewrite")
+		if len(css_app) == 0:
+			css_app_bundle = Bundle(*[])
+		else:
+			css_app_bundle = Bundle(*css_app, output="webassets/packed_app.css", filters="cssrewrite")
+
+		if len(less_app) == 0:
+			all_less_bundle = Bundle(*[])
+		else:
+			all_less_bundle = Bundle(*less_app, output="webassets/packed_app.less", filters="cssrewrite, less_importrewrite")
 
 		assets.register("js_libs", js_libs_bundle)
 		assets.register("js_client", js_client_bundle)
@@ -1126,4 +1129,3 @@ class LifecycleManager(object):
 			for event in events:
 				if callback in self._plugin_lifecycle_callbacks[event]:
 					self._plugin_lifecycle_callbacks[event].remove(callback)
-
